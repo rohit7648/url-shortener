@@ -1,0 +1,76 @@
+# Reference https://github.com/github/gitignore/blob/master/Go.gitignore
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+*.log
+.env
+.env.local
+.env.*.local
+configs/*.local.yaml
+
+# Build output
+*.pb.go
+*.pb.gw.go
+wire_gen.go
+
+# Generated files
+api/openapi/
+api/openapi.json
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Coverage tools
+*.cover
+coverage.txt
+coverage.html
+
+# Debug files
+debug
+debug.test
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Local development
+*.local.yaml
+*.local.json
+*.local.toml
