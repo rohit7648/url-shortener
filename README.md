@@ -22,7 +22,7 @@ A high-performance URL shortener service built with Go and Kratos framework.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/url-shortener.git
+git clone https://github.com/rohit7648/url-shortener.git
 cd url-shortener
 ```
 
