@@ -38,6 +38,7 @@ configs/*.local.yaml
 *.pb.go
 *.pb.gw.go
 wire_gen.go
+*.sum
 
 # Generated files
 api/openapi/

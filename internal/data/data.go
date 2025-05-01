@@ -14,22 +14,39 @@ var ProviderSet = wire.NewSet(NewData, NewUrlRepository)
 
 // Data .
 type Data struct {
-	db *sql.DB
+	db    *sql.DB
+	redis *RedisClient
+	log   *log.Helper
 }
 
 // NewData .
-func NewData(cfg *conf.Data, logger log.Logger) (*Data, func(), error) {
+func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	log := log.NewHelper(logger)
 
-	db, err := sql.Open("postgres", cfg.Database.Source)
+	db, err := sql.Open(c.Database.Driver, c.Database.Source)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	cleanup := func() {
-		log.Info("closing the data resources")
-		db.Close()
+	redisClient, err := NewRedisClient(c.Redis, logger)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return &Data{db: db}, cleanup, nil
+	d := &Data{
+		db:    db,
+		redis: redisClient,
+		log:   log,
+	}
+
+	cleanup := func() {
+		if err := d.db.Close(); err != nil {
+			log.Error(err)
+		}
+		if err := d.redis.Close(); err != nil {
+			log.Error(err)
+		}
+	}
+
+	return d, cleanup, nil
 }
