@@ -5,6 +5,9 @@ import (
 	"os"
 
 	"url-shortener/internal/conf"
+	"url-shortener/internal/data"
+	"url-shortener/internal/server"
+	"url-shortener/internal/service"
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -30,10 +33,10 @@ var (
 )
 
 func init() {
-	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
+	flag.StringVar(&flagconf, "conf", "./configs/config.yaml", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
+func newApp(logger log.Logger, hs *http.Server, gs *grpc.Server) *kratos.App {
 	return kratos.New(
 		kratos.ID(id),
 		kratos.Name(Name),
@@ -41,8 +44,8 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 		kratos.Metadata(map[string]string{}),
 		kratos.Logger(logger),
 		kratos.Server(
-			gs,
 			hs,
+			gs,
 		),
 	)
 }
@@ -58,6 +61,7 @@ func main() {
 		"trace.id", tracing.TraceID(),
 		"span.id", tracing.SpanID(),
 	)
+
 	c := config.New(
 		config.WithSource(
 			file.NewSource(flagconf),
@@ -74,13 +78,17 @@ func main() {
 		panic(err)
 	}
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
+	dataData, cleanup, err := data.NewData(bc.Data, logger)
 	if err != nil {
 		panic(err)
 	}
 	defer cleanup()
 
-	// start and wait for stop signal
+	urlShortener := service.NewUrlShortenerService(dataData, logger)
+	httpSrv := server.NewHTTPServer(&bc, urlShortener, logger)
+	grpcSrv := server.NewGRPCServer(bc.Server, urlShortener, logger)
+
+	app := newApp(logger, httpSrv, grpcSrv)
 	if err := app.Run(); err != nil {
 		panic(err)
 	}

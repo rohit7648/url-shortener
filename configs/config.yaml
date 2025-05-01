@@ -12,10 +12,10 @@ server:
 data:
   database:
     driver: postgres
-    source: host=localhost port=5432 user=postgres password=postgres dbname=url_shortener sslmode=disable
+    source: host=localhost port=5432 user=postgres password=postgres dbname=urlshortener search_path=public sslmode=disable
   redis:
     network: tcp
-    addr: localhost:6379
+    addr: localhost:6380
     password: ""
     db: 0
     dial_timeout: 1s

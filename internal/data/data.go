@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"url-shortener/internal/biz"
 	"url-shortener/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -49,4 +50,9 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	}
 
 	return d, cleanup, nil
+}
+
+// NewUrlRepository creates a new URL repository.
+func (d *Data) NewUrlRepository(logger log.Logger) biz.UrlRepository {
+	return NewUrlRepository(d, logger)
 }

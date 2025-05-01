@@ -2,69 +2,52 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"time"
+
 	v1 "url-shortener/api/urlshortener/v1"
 	"url-shortener/internal/biz"
-	"url-shortener/internal/conf"
+	"url-shortener/internal/data"
+
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 type UrlShortenerService struct {
 	v1.UnimplementedUrlShortenerServer
-	uc                 *biz.UrlUsecase
-	domain             string
-	defaultExpiryHours int64
+
+	uc  *biz.UrlUsecase
+	log *log.Helper
 }
 
-func NewUrlShortenerService(uc *biz.UrlUsecase, c *conf.Server) *UrlShortenerService {
+func NewUrlShortenerService(data *data.Data, logger log.Logger) *UrlShortenerService {
+	repo := data.NewUrlRepository(logger)
+	uc := biz.NewUrlUsecase(repo)
 	return &UrlShortenerService{
-		uc:                 uc,
-		domain:             c.Domain,
-		defaultExpiryHours: 24, // Default to 24 hours if not configured
+		uc:  uc,
+		log: log.NewHelper(logger),
 	}
 }
 
 func (s *UrlShortenerService) Shorten(ctx context.Context, req *v1.ShortenRequest) (*v1.ShortenReply, error) {
-	// Always use the configured default expiry time
-	expiresInSeconds := s.defaultExpiryHours * 3600 // Convert hours to seconds
-
-	shortCode, err := s.uc.Shorten(ctx, req.LongUrl, expiresInSeconds)
+	shortCode, err := s.uc.Shorten(ctx, req.LongUrl, 24*3600) // Default 24 hours expiry
 	if err != nil {
 		return nil, err
 	}
 
-	// Get the URL to get the expiry time
-	url, err := s.uc.Get(ctx, shortCode)
-	if err != nil {
-		return nil, err
-	}
-
-	var expiresAt int64
-	if url.ExpiresAt != nil {
-		expiresAt = url.ExpiresAt.Unix()
-	}
+	expiresAt := time.Now().Add(24 * time.Hour).Unix()
 
 	return &v1.ShortenReply{
-		ShortUrl:  fmt.Sprintf("%s/%s", s.domain, shortCode),
+		ShortUrl:  shortCode,
 		ExpiresAt: expiresAt,
 	}, nil
 }
 
 func (s *UrlShortenerService) Resolve(ctx context.Context, req *v1.ResolveRequest) (*v1.ResolveReply, error) {
-	url, err := s.uc.Get(ctx, req.ShortCode)
+	longURL, err := s.uc.Resolve(ctx, req.ShortCode)
 	if err != nil {
-		if err == biz.ErrUrlNotFound {
-			return nil, fmt.Errorf("URL not found or has expired")
-		}
 		return nil, err
 	}
 
-	var expiresAt int64
-	if url.ExpiresAt != nil {
-		expiresAt = url.ExpiresAt.Unix()
-	}
-
 	return &v1.ResolveReply{
-		LongUrl:   url.LongURL,
-		ExpiresAt: expiresAt,
+		LongUrl: longURL,
 	}, nil
 }
