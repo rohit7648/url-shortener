@@ -1,17 +1,23 @@
 server:
   http:
+    network: tcp
     addr: 0.0.0.0:8000
-    timeout: 5s
+    timeout: 1s
   grpc:
+    network: tcp
     addr: 0.0.0.0:9000
-    timeout: 5s
+    timeout: 1s
   domain: https://rohitShort.com
   default_expiry_hours: 24
 data:
   database:
     driver: postgres
-    source: postgres://postgres:postgres@localhost:5432/urlshortener?sslmode=disable
+    source: host=localhost port=5432 user=postgres password=postgres dbname=urlshortener search_path=public sslmode=disable
   redis:
-    addr: 127.0.0.1:6379
-    read_timeout: 0.2s
-    write_timeout: 0.2s
+    network: tcp
+    addr: localhost:6380
+    password: ""
+    db: 0
+    dial_timeout: 1s
+    read_timeout: 0.5s
+    write_timeout: 0.5s

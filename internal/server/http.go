@@ -8,26 +8,28 @@ import (
 	"url-shortener/internal/conf"
 	"url-shortener/internal/service"
 
+	"url-shortener/internal/data"
+
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, urlShortener *service.UrlShortenerService, logger log.Logger) *khttp.Server {
+func NewHTTPServer(c *conf.Bootstrap, urlShortener *service.UrlShortenerService, logger log.Logger) *khttp.Server {
 	var opts = []khttp.ServerOption{
 		khttp.Middleware(
 			recovery.Recovery(),
 		),
 	}
-	if c.Http.Network != "" {
-		opts = append(opts, khttp.Network(c.Http.Network))
+	if c.Server.Http.Network != "" {
+		opts = append(opts, khttp.Network(c.Server.Http.Network))
 	}
-	if c.Http.Addr != "" {
-		opts = append(opts, khttp.Address(c.Http.Addr))
+	if c.Server.Http.Addr != "" {
+		opts = append(opts, khttp.Address(c.Server.Http.Addr))
 	}
-	if c.Http.Timeout != nil {
-		opts = append(opts, khttp.Timeout(c.Http.Timeout.AsDuration()))
+	if c.Server.Http.Timeout != nil {
+		opts = append(opts, khttp.Timeout(c.Server.Http.Timeout.AsDuration()))
 	}
 	srv := khttp.NewServer(opts...)
 
@@ -84,6 +86,28 @@ func NewHTTPServer(c *conf.Server, urlShortener *service.UrlShortenerService, lo
 			"long_url":   reply.LongUrl,
 			"expires_at": reply.ExpiresAt,
 		})
+	})
+
+	// Add health check endpoint
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		// Check Redis connection
+		ctx := r.Context()
+		redisClient, err := data.NewRedisClient(c.Data.Redis, logger)
+		if err != nil {
+			http.Error(w, "Redis connection failed: "+err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		defer redisClient.Close()
+
+		// Test Redis connection
+		err = redisClient.Ping(ctx)
+		if err != nil {
+			http.Error(w, "Redis ping failed: "+err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
 	})
 
 	srv.HandlePrefix("/", mux)

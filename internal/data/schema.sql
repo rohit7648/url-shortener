@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS urls (
+    short_code VARCHAR(255) PRIMARY KEY,
+    long_url TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+); 
